@@ -1,5 +1,5 @@
 import { timeStamp } from "console";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface IBall {
     x: number,
@@ -8,11 +8,11 @@ interface IBall {
     dx: number,
     dy: number,
     color: string
-  }
+}
 
-type Props = React.DetailedHTMLProps<React.CanvasHTMLAttributes<HTMLCanvasElement>, HTMLCanvasElement> 
-        & 
-    { draw?: (context: CanvasRenderingContext2D) => void};
+type Props = React.DetailedHTMLProps<React.CanvasHTMLAttributes<HTMLCanvasElement>, HTMLCanvasElement>
+    &
+{ draw?: (context: CanvasRenderingContext2D) => void };
 
 
 
@@ -21,21 +21,73 @@ type Props = React.DetailedHTMLProps<React.CanvasHTMLAttributes<HTMLCanvasElemen
 const Canvas: React.FC<Props> = ({ ...props }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-    const balls = [{x: 100, y: 100, r: 30, dx: 5, dy: 0, color: 'red'}, {x: 150, y: 100, r: 30, dx: -5, dy: 0, color: 'green'}];
+    const balls = [{ x: 100, y: 100, r: 30, dx: 0, dy: 0, color: 'red' }, { x: 500, y: 400, r: 30, dx: 0, dy: 0, color: 'green' },{ x: 400, y: 120, r: 40, dx: 0, dy: 0, color: 'blue' }];
+
+    const mouseDown = useRef<boolean>(false);
+    const mousePrevPos = useRef<{x: number, y: number}>({x: 0, y: 0})
+    const mousePos = useRef<{x: number, y: number}>({x: 0, y: 0})
+
+    const isInside = (mx: number, my: number, ball: IBall) : boolean => {
+        const distX = mx - ball.x;
+        const distY = my - ball.y;
+        const distance = Math.sqrt(distX ** 2 + distY ** 2);
+        return distance <= ball.r
+    }
+
+    const handleMouseDown = (e: MouseEvent) => {
+        const rectangle = canvasRef.current?.getBoundingClientRect() as DOMRect;
+        const mouse_x = e.clientX - rectangle.left;
+        const mouse_y = e.clientY - rectangle.top;
+        
+        if(e.buttons === 1) {
+            mouseDown.current = true;
+        } 
+        balls.forEach(ball => {
+            
+            if(isInside(mouse_x, mouse_y, ball) && e.buttons === 1) {
+                console.log(ball.color)
+            }
+        })
+    }
+
+    const handleMouseUp = (e: MouseEvent) => {
+        if(e.buttons === 0) {
+            mouseDown.current = false;
+        }
+    }
 
 
+    const handleMouseMove = (e: MouseEvent) => {
+        const rectangle = canvasRef.current?.getBoundingClientRect() as DOMRect;
+        const mouse_x = e.clientX - rectangle.left;
+        const mouse_y = e.clientY - rectangle.top;
+        mousePrevPos.current = {x: mousePos.current.x, y: mousePos.current.y }
+        mousePos.current = {x: mouse_x, y: mouse_y}
 
+        const dmx = mousePos.current.x - mousePrevPos.current.x;
+        const dmy = mousePos.current.y - mousePrevPos.current.y;
 
-
+        balls.forEach(ball => {
+            if(isInside(mouse_x, mouse_y, ball) && mouseDown.current) {
+                ball.dx = dmx;
+                ball.dy = dmy;
+            }
+        })
+        
+    }
 
     useEffect(() => {
+        
+        canvasRef.current?.addEventListener('mousemove', handleMouseMove)
+        canvasRef.current?.addEventListener('mousedown', handleMouseDown)
+        canvasRef.current?.addEventListener('mouseup', handleMouseUp)
 
         const canvas = canvasRef.current;
-        if(!canvas) {
+        if (!canvas) {
             return;
         }
         const canvasContext = canvas.getContext('2d');
-        if(!canvasContext) {
+        if (!canvasContext) {
             return;
         }
 
@@ -48,8 +100,8 @@ const Canvas: React.FC<Props> = ({ ...props }) => {
                 context.fill();
                 context.closePath();
             })
-          }
-        
+        }
+
         const animate = () => {
             update()
             draw(canvasContext)
@@ -61,37 +113,43 @@ const Canvas: React.FC<Props> = ({ ...props }) => {
             balls.forEach(ball => {
                 ball.x += ball.dx;
                 ball.y += ball.dy;
-                if(ball.x - ball.r < 0 || ball.x + ball.r > canvas.width) {
-                    ball.dx = -ball.dx
+                if (ball.x - ball.r < 0 || ball.x + ball.r > canvas.width) {
+                    const dxReversed = -ball.dx * 0.9;
+                    ball.dx = dxReversed
                 }
-                if(ball.y - ball.r < 0 || ball.y + ball.r > canvas.height) {
-                    ball.dy = -ball.dy
+                if (ball.y - ball.r < 0 || ball.y + ball.r > canvas.height) {
+                    const dyReversed = -ball.dy * 0.9;
+                    ball.dy = dyReversed
                 }
 
                 balls.forEach(otherBall => {
-                    if(ball !== otherBall) {
+                    if (ball !== otherBall) {
                         const dBalls_x = ball.x - otherBall.x
                         const dBalls_y = ball.y - otherBall.y
                         const distance = Math.sqrt(dBalls_x * dBalls_x + dBalls_y * dBalls_y);
-                        if(distance < ball.r + otherBall.r) {
-                            
+                        if (distance < ball.r + otherBall.r) {
+                            otherBall.dx = (otherBall.dx + ball.dx) * -0.9;
+                            otherBall.dy = (otherBall.dy + ball.dy) * -0.9;
                         }
-
                     }
                 })
 
 
             })
 
-            
-            
         }
 
         const animationFrameId = requestAnimationFrame(animate);
+
+        return () => {
+            canvasRef.current?.removeEventListener('mouseover', handleMouseMove)
+            canvasRef.current?.removeEventListener('mousedown', handleMouseDown)
+            canvasRef.current?.removeEventListener('mouseup', handleMouseUp)
+        }
     }, [])
 
     return (
-        <canvas width={props.width} height={props.height} ref={canvasRef} style={{border: '1px solid #333'}}/>
+        <canvas width={props.width} height={props.height} ref={canvasRef} style={{ border: '1px solid #333' }} />
     )
 }
 
