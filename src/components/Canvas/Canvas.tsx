@@ -9,19 +9,27 @@ interface IBall {
     dy: number,
     color: string
 }
+type ballsType = IBall[];
+
+interface IProps {
+    setBallIndex: React.Dispatch<React.SetStateAction<number | null>>,
+    setModalVisible: React.Dispatch<React.SetStateAction<boolean>>,
+    ballIndex: number | null,
+    modalVisible: boolean,
+    balls: IBall[]
+}
+
+
 
 type Props = React.DetailedHTMLProps<React.CanvasHTMLAttributes<HTMLCanvasElement>, HTMLCanvasElement>
     &
-{ draw?: (context: CanvasRenderingContext2D) => void };
+IProps;
 
 
 
 
-
-const Canvas: React.FC<Props> = ({ ...props }) => {
+const Canvas: React.FC<Props> = ({balls, ...props }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-    const balls = [{ x: 100, y: 100, r: 30, dx: 0, dy: 0, color: 'red' }, { x: 500, y: 400, r: 30, dx: 0, dy: 0, color: 'green' },{ x: 400, y: 120, r: 40, dx: 0, dy: 0, color: 'blue' }];
 
     const mouseDown = useRef<boolean>(false);
     const mousePrevPos = useRef<{x: number, y: number}>({x: 0, y: 0})
@@ -45,15 +53,17 @@ const Canvas: React.FC<Props> = ({ ...props }) => {
         balls.forEach(ball => {
             
             if(isInside(mouse_x, mouse_y, ball) && e.buttons === 1) {
-                console.log(ball.color)
+                props.setBallIndex(balls.indexOf(ball));
+                props.setModalVisible(true);
+                mouseDown.current = false
             }
         })
     }
 
     const handleMouseUp = (e: MouseEvent) => {
-        if(e.buttons === 0) {
+        
             mouseDown.current = false;
-        }
+        
     }
 
 
