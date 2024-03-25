@@ -1,17 +1,10 @@
 import { timeStamp } from "console";
 import { useEffect, useRef, useState } from "react";
+import { IBall } from "../../App";
 
-interface IBall {
-    x: number,
-    y: number,
-    r: number,
-    dx: number,
-    dy: number,
-    color: string
-}
-type ballsType = IBall[];
 
-interface IProps {
+
+export interface IProps {
     setBallIndex: React.Dispatch<React.SetStateAction<number | null>>,
     setModalVisible: React.Dispatch<React.SetStateAction<boolean>>,
     ballIndex: number | null,
@@ -123,24 +116,43 @@ const Canvas: React.FC<Props> = ({balls, ...props }) => {
             balls.forEach(ball => {
                 ball.x += ball.dx;
                 ball.y += ball.dy;
-                if (ball.x - ball.r < 0 || ball.x + ball.r > canvas.width) {
-                    const dxReversed = -ball.dx * 0.9;
-                    ball.dx = dxReversed
+
+                if(ball.x - ball.r < 0) {
+                    ball.x = ball.r;
+                    ball.dx *= -0.9;
+                } else if(ball.x + ball.r > canvas.width) {
+                    ball.x = canvas.width - ball.r;
+                    ball.dx *= -0.9;
                 }
-                if (ball.y - ball.r < 0 || ball.y + ball.r > canvas.height) {
-                    const dyReversed = -ball.dy * 0.9;
-                    ball.dy = dyReversed
+
+                if(ball.y - ball.r < 0) {
+                    ball.y = ball.r;
+                    ball.dy *= -0.9;
+                } else if(ball.y + ball.r > canvas.height) {
+                    ball.y = canvas.height - ball.r;
+                    ball.dy *= -0.9;
                 }
+
+                
+
+
 
                 balls.forEach(otherBall => {
                     if (ball !== otherBall) {
                         const dBalls_x = ball.x - otherBall.x
                         const dBalls_y = ball.y - otherBall.y
                         const distance = Math.sqrt(dBalls_x * dBalls_x + dBalls_y * dBalls_y);
+                        const overlap = (ball.r + otherBall.r) - distance;
+                        const angle = Math.atan2(dBalls_y, dBalls_x);
+                        const overlap_x = Math.cos(angle) * overlap;
+                        const overlap_y = Math.sin(angle) * overlap;
                         if (distance < ball.r + otherBall.r) {
-                            otherBall.dx = (otherBall.dx + ball.dx) * -0.9;
-                            otherBall.dy = (otherBall.dy + ball.dy) * -0.9;
+                            otherBall.dx = (otherBall.dx + ball.dx) * -0.7;
+                            otherBall.dy = (otherBall.dy + ball.dy) * -0.7;
+                            otherBall.x -= overlap_x / 2;
+                            otherBall.y -= overlap_y /2;
                         }
+                        
                     }
                 })
 

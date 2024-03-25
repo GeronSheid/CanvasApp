@@ -1,16 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styles from './ModalWindow.module.css';
+import { IBall, ballsType } from '../../App';
 
-interface IBall {
-    x: number,
-    y: number,
-    r: number,
-    dx: number,
-    dy: number,
-    color: string
-  }
-  
-  type ballsType = IBall[];
+
 
 interface IProps {
     balls: IBall[]
